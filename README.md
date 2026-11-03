@@ -1,8 +1,12 @@
 # vimify-windows
 
-Bring Vim-style **command / insert modes**, motion keys, registers, and fast app switching to everyday Windows apps — powered by [AutoHotkey](https://www.autohotkey.com/) v1.
+Vim as an **OS layer** for Windows — not just Vim keys inside a text box.
 
-When the script is running, most of Windows behaves like a modal editor: navigate with `hjkl`, yank/paste with `yp`, jump between apps with `g`, and drop into insert mode only when you need to type.
+Most “Vim on Windows” tools stop at modal text editing (hjkl in Notepad, Word, etc.). This script goes further: command / insert modes, motions, and registers apply across the desktop, then extend into **app switching**, an **app stack**, and **per-app command maps** so the whole workstation feels like one Vim-shaped environment. Powered by [AutoHotkey](https://www.autohotkey.com/) v1.
+
+When it’s running, navigate with `hjkl`, yank/paste with `yp`, jump between programs with `g`, bounce back with `,`, and drop into insert mode only when you need to type.
+
+This is a **personal** script — paths, apps, and chords are tuned for one workstation, not a general audience. If people really like it, I can advance it and make it more suitable for various users; otherwise, fork it and adapt it for your own setup.
 
 ---
 
@@ -212,10 +216,8 @@ Bindings are intentionally personal and uneven — some modules are deep (Outloo
 - Several Chrome-class apps (Chrome, Slack, Teams, Cursor, VS Code, Azure Data Studio) are distinguished by **window title**, not class alone.
 - Multi-instance switching for Firefox, terminals, and Visual Studio uses an in-memory `dynamicWindowsStack`.
 - Some macros assume companion tools (point-n-click via `Ctrl+F1`/`Ctrl+F2`, nircmd). Put `changeKeyboardLayout.ps1` in `scripts\` (next to the repo root) for the layout-switch hotkey.
-- This is a long-lived personal automation layer — treat paths, titles, and key chords as starting points, not a universal product API.
-
 ---
 
 ## License
 
-Use and adapt freely for personal or team workflows. If you publish changes, credit is appreciated but not required.
+Use and adapt freely. Forks welcome. Credit is appreciated but not required.
