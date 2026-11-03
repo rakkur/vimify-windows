@@ -37,12 +37,6 @@ RunFFCommand(count, key, modifier)
 		Send {F5}
 	Else If RegExMatch(key, "i)^t$")
 		Send ^t
-	/*
-	Else If RegExMatch(key, "i)^q$") && !RegExMatch(modifier, "i)^(ctrl|plus|alt)$")
-		Send {Tab}
-	Else If RegExMatch(key, "i)^q$") && RegExMatch(modifier, "i)^(plus)$")
-		Send +{Tab}
-	*/
 	Else If RegExMatch(key, "i)^o$")
 		Send {Enter}
 	Else If RegExMatch(key, "i)^tab$") && !RegExMatch(modifier, "i)^(ctrl|plus|alt)$")

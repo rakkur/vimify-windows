@@ -37,37 +37,15 @@ ChangeIcons()
 	if(vi = 1 )
 	{
 		iconMode := tray_icon_normal . "_" . pointNCLick . ".bmp"
-
-		;if(pointNCLick != 1)
-		;{
-		;	IDC_IBEAM := 32650
-		;	CursorHandle := DllCall( "LoadCursor", Uint,0, Int,IDC_IBEAM )
-		;	Loop, Parse, Cursors, `,
-		;	{
-		;		DllCall( "SetSystemCursor", Uint,CursorHandle, Int,A_Loopfield )
-		;	}
-		;}
 	}
 	else
 	{
-		;if(pointNCLick = 1)
-		;{
-		;	IDC_IBEAM := 32516
-		;	CursorHandle := DllCall( "LoadCursor", Uint,0, Int,IDC_IBEAM )
-		;	Loop, Parse, Cursors, `,
-		;	{
-		;		DllCall( "SetSystemCursor", Uint,CursorHandle, Int,A_Loopfield )
-		;	}
-		;}
-		;else
-		;{
-			IDC_IBEAM := 32513
-			CursorHandle := DllCall( "LoadCursor", Uint,0, Int,IDC_IBEAM )
-			Loop, Parse, Cursors, `,
-			{
-				DllCall( "SetSystemCursor", Uint,CursorHandle, Int,A_Loopfield )
-			}
-		;}
+		IDC_IBEAM := 32513
+		CursorHandle := DllCall( "LoadCursor", Uint,0, Int,IDC_IBEAM )
+		Loop, Parse, Cursors, `,
+		{
+			DllCall( "SetSystemCursor", Uint,CursorHandle, Int,A_Loopfield )
+		}
 	}
 
 	; change pic
@@ -591,17 +569,6 @@ key := "f2"
 modifier := ""
 GetUserCmd(key, modifier)
 Return
-;$Delete::
-;$+Delete::
-;$!Delete::
-;$^Delete::
-;$+!Delete::
-;$+^Delete::
-;$!^Delete::
-;key := ""
-;modifier := ""
-;GetUserCmd(key, modifier)
-;Return
 $CapsLock::
 $+CapsLock::
 $!CapsLock::

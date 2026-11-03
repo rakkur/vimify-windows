@@ -1,5 +1,3 @@
-;MsgBox
-
 ; xplorer2 notes:  keyboard mappings need to be set up to work
 ; Alt-F2/F3 : move panel left/right
 ; Alt-F7: thumbnail ALT-F8: details toggle details/thumbnails.  also toggles UI to move tab by +h/+l
@@ -94,8 +92,6 @@ GetUserCmd(key, modifier)
 		ReturnClass := "vs"
 	else if RegExMatch(comp, "i)wxWindowClassNR")
 		ReturnClass := "audacity"
-	; else if RegExMatch(comp, "i)VISIOA")
-	; 	ReturnClass := "visio"
 	else if RegExMatch(comp, "i)AcrobatSDIWindow")
 		ReturnClass := "acrobat"
 	else if RegExMatch(comp, "i)G2WAttendeeViewer")
@@ -124,17 +120,6 @@ GetUserCmd(key, modifier)
 		ReturnClass := ""
 
 	noSend := 0
-
-	; record macro, if doing so
-	;If recordingMacro = 1
-	;{
-	;	macroKeyArray%macroContainer%_%macroIndex% := key
-	;	macroModifierArray%macroContainer%_%macroIndex% := modifier
-	;	macroIndex := macroIndex + 1
-	;
-	;	thisVal := macroKeyArray%macroContainer%_%macroIndex%
-	;	MsgBox, %thisVal%
-	;}
 
     winTitle := ""
     WinGetActiveTitle, winTitle
@@ -259,10 +244,6 @@ GetUserCmd(key, modifier)
                     vi := 0
                     ChangeIcons()
                 }
-                ;Else If RegExMatch(key, "i)^q")
-                ;{
-                ;	RecordMacro()
-                ;}
                 Else If RegExMatch(key, "i)^enter") && !RegExMatch(ReturnClass, "i)vs")
                     Send {Enter}
                 Else If RegExMatch(key, "i)^y$")
@@ -681,22 +662,15 @@ GetUserInput(key, modifier, ReturnClass)
 			; 2[ will bring you back to h, while [ will bring you back to x
 			if RegExMatch(finalError, "i)^EndKey:,$")
 			{
-				;debugOut := appStackTotal . " > " . key
-
 				if(appStackTotal > key)
 					tmpCount := appStackTotal - key
 				else
 					tmpCount := 1
 
-				;debugOut := debugOut . " -> " . tmpCount
-
 				; make sure not to hit the same program we are currently on; if so, add one to the array counter
 				regex := "i)^" . AppStack%tmpCount% . "$"
 				if RegExMatch(thisProgram, regex)
 					tmpCount := tmpCount + 1
-
-				;debugOut := debugOut . " final: " . AppStack%tmpCount% . "[" . tmpCount . "]"
-				;MsgBox, %debugOut%
 
 				; finally, switch programs
 				AdjustAppStack()
@@ -842,15 +816,6 @@ AdjustAppStack()
 		thisProgram := "a"
 	else if RegExMatch(comp, "i)HwndWrapper\[DefaultDomain;;.*") || RegExMatch(comp, "i)VSDebugger")
         thisProgram := "vs"
-
-	; else if RegExMatch(comp, "i)HwndWrapper\[DefaultDomain;;" . vsGuid1 . "\]")
-	; 	thisProgram := "v1"
-	; else if RegExMatch(comp, "i)HwndWrapper\[DefaultDomain;;" . vsGuid2 . "\]")
-	; 	thisProgram := "v2"
-	; else if RegExMatch(comp, "i)HwndWrapper\[DefaultDomain;;" . vsGuid3 . "\]")
-	; 	thisProgram := "v3"
-	; else if RegExMatch(comp, "i)VISIOA")
-	; 	thisProgram := "v"
 	else if (RegExMatch(comp, "i)ConsoleWindowClass") || RegExMatch(comp, "i)CASCADIA_HOSTING_WINDOW_CLASS"))
 		thisProgram := "c"
 	else if RegExMatch(comp, "i)WindowsForms10.Window.8.app.0.[a-z0-9_]*")
@@ -871,7 +836,6 @@ AdjustAppStack()
 	Loop %appStackTotal%
 	{
 		element := AppStack%A_Index%
-		;MsgBox, "stack" . %A_Index% . " = " . %element%
 		regex := "i)^" . thisProgram . "$"
 		if(RegExMatch(AppStack%A_Index%, regex))
 			remVal := A_Index
@@ -897,13 +861,6 @@ AdjustAppStack()
 	; finally, iterate stack
 	appStackTotal := appStackTotal + 1
 	AppStack%appStackTotal% := thisProgram
-
-	; debug only
-	echoDebug := %appStackTotal% . " "
-	Loop %appStackTotal%
-		echoDebug := echoDebug . "->" AppStack%A_Index% . "[" . A_Index . "]"
-
-	;MsgBox, %echoDebug%
 }
 
 
@@ -999,11 +956,6 @@ RunControlFocus(userCmd, userCmd2 = "", forceTitle = "")
 		WinActivate
 		ControlFocus, Qt5QWindowIcon
 	}
-	; Else If RegExMatch(userCmd, "i)^s+") && WinExist("ahk_class wndclass_desked_gsk")
-	; {
-	; 	WinActivate
-	; 	ControlFocus, wndclass_desked_gsk
-	; }
 	Else If RegExMatch(userCmd, "i)^p+") && WinExist("ahk_class Photo_Lightweight_Viewer")
 	{
 		WinActivate
@@ -1106,54 +1058,10 @@ RunControlFocus(userCmd, userCmd2 = "", forceTitle = "")
         }
 	}
 
-	; Else If RegExMatch(userCmd, "i)^v1+") && WinExist("ahk_class HwndWrapper[DefaultDomain;;" . vsGuid1 . "]") ; VS
-	; {
-	; 	WinActivate
-	; 	tFocus := "HwndWrapper[DefaultDomain;;" . vsGuid1 . "]"
-	; 	ControlFocus, %tFocus%
-	; }
-	; Else If RegExMatch(userCmd, "i)^v2+") && WinExist("ahk_class HwndWrapper[DefaultDomain;;" . vsGuid2 . "]") ; VS
-	; {
-	; 	WinActivate
-	; 	tFocus := "HwndWrapper[DefaultDomain;;" . vsGuid2 . "]"
-	; 	ControlFocus, %tFocus%
-	; }
-	; Else If RegExMatch(userCmd, "i)^v3+") && WinExist("ahk_class HwndWrapper[DefaultDomain;;" . vsGuid3 . "]") ; VS
-	; {
-	; 	WinActivate
-	; 	tFocus := "HwndWrapper[DefaultDomain;;" . vsGuid3 . "]"
-	; 	ControlFocus, %tFocus%
-	; }
 	Else If RegExMatch(userCmd, "i)^v+")
 	{
         RunControlFocus_Dynamic(userCmd2, "VS", forceTitle)
 	}
-;	Else If RegExMatch(userCmd, "i)^l+") && WinExist("ahk_class VISIOA")
-;	{
-;		WinActivate
-;		ControlFocus, VISIOA
-;	}
-
-	;Else If RegExMatch(userCmd, "i)^v+")
-	;{
-		; can't do this the right way, have to click on the icon
-		;ClickFunc(94, 1069)
-		;ClickFunc(104, 1069)
-
-		; not functional; can't grab visual studio for focus
-;		WinGet, list, List, , , Program Manager
-;		Loop %   list
-;		{
-;		   WinGetClass, class, %   (win :=   "ahk_id " list%A_Index%)
-;
-;		   If RegExMatch(class, "i)^HwndWrapper")
-;			  break
-;		}
-;
-;
-;		WinActivate
-;		ControlFocus, HwndWrapper[DefaultDomain;;b1b030ba-e45d-4b3a-a59d-80723aaa6dae]
-	;}
 }
 
 RunControlFocus_Dynamic(userCmd2, type, forceTitle = "")

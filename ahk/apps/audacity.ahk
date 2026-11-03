@@ -80,13 +80,4 @@ RunAudacityCommand(count, key, modifier)
 		Send 1.0
 		Send {Enter}
 	}
-	/*
-	Else If RegExMatch(key, "i)^c$")
-	{
-		Send +{ End }
-		Send { Delete }
-		Send { End }
-	}
-	*/
-
 }

@@ -88,15 +88,6 @@ Escape::
 Send { Esc }
 Return
 
-; fix bug in vim
-;<::
-;Send !w
-;Return
-
-;>::
-;Send !t
-;Return
-
 F1::
 if(toggleLanguage != 0)
 	toggleLanguage := 1
@@ -109,10 +100,6 @@ Return
 RunControlFocus("x")
 Return
 
-;+F11::
-;RunControlFocus("v")
-;Return
-
 +F10::
 RunControlFocus("f")
 Return
@@ -121,21 +108,11 @@ Return
 RunControlFocus("r")
 Return
 
-; send command to shift and create brackets around
 $,::
 if(!disableCommaTab)
     RunControlFocus(AppStack%appStackTotal%)
 else
     Send {,}
-
-;Send !a
-;Sleep, 100
-
-;MsgBox,
-;if (RegExMatch(clipboard, "i)^run$") && WinExist("ahk_class ATL:ExplorerFrame")) or toggleLanguage = 1
-	;RunControlFocus(AppStack%appStackTotal%)
-;
-;Transform, clipboard, Unicode, %clipboardSave%
 Return
 
 ; function to send current file to cursor
