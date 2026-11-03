@@ -8,45 +8,6 @@ RunAudacityCommand(count, key, modifier)
 		Send i
 		Send a
 	}
-	Else If RegExMatch(key, "i)^f$") && RegExMatch(modifier, "i)ctrl")
-	{
-		Send !f
-		Send i
-		Send a
-		Sleep, 1000
-		Send C:\Users\Rakk40\Desktop\Radio\Take a trip - short.mp3
-		Sleep, 200
-		Send { Enter }
-		Sleep, 1500
-
-		Send !f
-		Send i
-		Send a
-		Sleep, 1000
-		Send C:\Users\Rakk40\Desktop\Radio\La ere gymnopedie.mp3
-		Sleep, 200
-		Send { Enter }
-	}
-	Else If RegExMatch(key, "i)^f$") && RegExMatch(modifier, "i)plus")
-	{
-		Send !f
-		Send i
-		Send a
-		Sleep, 1000
-		Send C:\Users\Rakk40\Desktop\Radio\Electro DnB A.mp3
-		Sleep, 200
-		Send { Enter }
-		Sleep, 1500
-
-		Send !f
-		Send i
-		Send a
-		Sleep, 1000
-		Send C:\Users\Rakk40\Desktop\Radio\La ere gymnopedie.mp3
-		Sleep, 200
-		Send { Enter }
-	}
-
 	Else If RegExMatch(key, "i)^l$")
 	{
 		Send !c

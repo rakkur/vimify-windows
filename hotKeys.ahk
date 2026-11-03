@@ -26,7 +26,15 @@ outlookMode := "mail"
 currentMonitor := "Mirror"
 disableCommaTab := 0
 
-dynamicWindowsStack := { FF: [], CMD: [], VS: []}
+dynamicWindowsStack := { FF: [], CMD: [], VS: [], GVIM: [], CURSOR: []}
+; Last GVim focused (Ctrl+Alt+N / gh / comma). "h" without index restores this window, not always stack[1].
+lastGvimHwnd =
+; Last Cursor (Electron) focused — same idea as lastGvimHwnd for comma p / Ctrl+Alt+N.
+lastCursorHwnd =
+; Last Visual Studio (full IDE) focused — comma v / Ctrl+Alt+N.
+lastVsHwnd =
+; Last Cursor or VS Code window (Chrome_WidgetWin_1) — both use comma stack "p"; disambiguate from each other.
+lastElectronEditorHwnd =
 
 GroupAdd, xplorerGrp, ahk_class ATL:ScrapFrame
 GroupAdd, xplorerGrp, ahk_class ATL:ExplorerFrame
@@ -35,6 +43,7 @@ GroupAdd, xplorerGrp, ahk_class ATL:ExplorerFrame
 GetDynamicWindows("FF")
 GetDynamicWindows("CMD")
 GetDynamicWindows("VS")
+GetDynamicWindows("GVIM")
 
 ; initialize our engine by mapping keys/creating gui elements
 #Include %A_ScriptDir%\ahk\engine\init.ahk
@@ -57,9 +66,7 @@ GetUserCmd(key, modifier)
 	else if RegExMatch(comp, "i)Chrome_WidgetWin_1")
     {
         ; need to look at the title of the program to determine which one it is
-        if RegExMatch(winTitle, "i)- Azure Data Studio")
-            ReturnClass := "tsql"
-        else if RegExMatch(winTitle, "i)- Google Chrome")
+        if RegExMatch(winTitle, "i)- Google Chrome")
             ReturnClass := "chrome"
         else if RegExMatch(winTitle, "i)automation")
             ReturnClass := "chrome"
@@ -69,7 +76,7 @@ GetUserCmd(key, modifier)
             ReturnClass := "cursor"
         else if RegExMatch(winTitle, "i)Microsoft Teams")
             ReturnClass := "teams"
-        else if RegExMatch(winTitle, "i)Visual Studio Code")
+        else if RegExMatch(winTitle, "i)- Visual Studio Code")
             ReturnClass := "vscode"
     }
 	else if RegExMatch(comp, "i)ConfMultiTabContentWndClass")
@@ -148,8 +155,10 @@ GetUserCmd(key, modifier)
             Send {Tab}
         Else If RegExMatch(key, "i)^fSlash$")
             Send /
-        Else If RegExMatch(key, "i)^esc$")
+        Else If RegExMatch(key, "i)^esc$") && !RegExMatch(ReturnClass, "i)cursor")
             Send {Escape}
+        Else If RegExMatch(key, "i)^esc$") && RegExMatch(ReturnClass, "i)cursor")
+		{  } ; do nothing
         Else If RegExMatch(key, "i)^f2$")
             Send {F2}
         Else If RegExMatch(key, "i)^lBracket$")
@@ -708,8 +717,8 @@ GetUserInput(key, modifier, ReturnClass)
 		RunExpCommand(key, userCmd, modifier)
 	else if RegExMatch(ReturnClass, "i)^outlook$")
 		RunOutlookCommand(key, userCmd, modifier)
-	else if RegExMatch(ReturnClass, "i)^tsql$")
-		RunSqlCommand(key, userCmd, modifier)
+	else if RegExMatch(ReturnClass, "i)^vscode")
+		RunVSCodeCommand(key, userCmd, modifier)
 	else if RegExMatch(ReturnClass, "i)^note$")
 		RunNotepadCommand(key, userCmd, modifier)
 	else if RegExMatch(ReturnClass, "i)^xls$")
@@ -783,14 +792,16 @@ AdjustAppStack()
 			thisProgram := "a"
         else if RegExMatch(winTitle, "i)Slack")
 			thisProgram := "r"
-        else if RegExMatch(winTitle, "i)- Azure Data Studio")
-			thisProgram := "s"
         else if RegExMatch(winTitle, "i)Microsoft Teams")
 			thisProgram := "t"
         else if RegExMatch(winTitle, "i)Cursor")
 			thisProgram := "p"
         else if RegExMatch(winTitle, "i)Visual Studio Code")
 			thisProgram := "p"
+        if (RegExMatch(comp, "i)^Chrome_WidgetWin_1") && CursorTitleIsApp(winTitle))
+            lastCursorHwnd := SavedWinId
+        if (RegExMatch(comp, "i)^Chrome_WidgetWin_1") && ElectronEditorTitle(winTitle))
+            lastElectronEditorHwnd := SavedWinId
     }
 	else if RegExMatch(comp, "i)IEFrame")
 		thisProgram := "i"
@@ -871,7 +882,8 @@ RunControlFocus(userCmd, userCmd2 = "", forceTitle = "")
 
 	; check if the program we are switching to is the same one we are on currently, if so go back to first in the stack
 	regex := "i)^" . AppStack%appStackTotal% . "$"
-	if(RegExMatch(userCmd, regex) && appStackTotal > 1 && !RegExMatch(userCmd, "i)^f") && !RegExMatch(userCmd, "i)^v") && !RegExMatch(userCmd, "i)^c"))
+	; Exclude p — Cursor and VS Code share stack letter "p"; rewriting to AppStack1 breaks g p ("gp") like f/v/c.
+	if(RegExMatch(userCmd, regex) && appStackTotal > 1 && !RegExMatch(userCmd, "i)^f") && !RegExMatch(userCmd, "i)^v") && !RegExMatch(userCmd, "i)^c") && !RegExMatch(userCmd, "i)^p"))
 	{
         tmpNum := 1
         userCmd := AppStack%tmpNum%
@@ -898,36 +910,137 @@ RunControlFocus(userCmd, userCmd2 = "", forceTitle = "")
 	}
 	Else If RegExMatch(userCmd, "i)^h+") && WinExist("ahk_class Vim")
 	{
-        Run, C:\Program Files\Vim\scripts\nircmd.exe win activate title "GVIM"
+        if (userCmd2 != "")
+            RunControlFocus_Dynamic(userCmd2, "GVIM")
+        else
+        {
+            useLast := (lastGvimHwnd != "" && WinExist("ahk_id " . lastGvimHwnd))
+            if useLast
+            {
+                WinGetClass, _gvCls, ahk_id %lastGvimHwnd%
+                useLast := RegExMatch(_gvCls, "i)^Vim$")
+            }
+            if useLast
+            {
+                WinActivate ahk_id %lastGvimHwnd%
+                GetDynamicWindows("GVIM")
+            }
+            else
+                RunControlFocus_Dynamic("1", "GVIM")
+        }
 	}
 	Else If RegExMatch(userCmd, "i)^h+")
 	{
-        Run, C:\Program Files\Vim\Vim91\gvim.exe
+        Run, C:\Program Files\Vim\Vim92\gvim.exe
 	}
 	Else If (RegExMatch(userCmd, "i)^p+") || RegExMatch(userCmd, "i)^a+") || RegExMatch(userCmd, "i)^s+") || RegExMatch(userCmd, "i)^r+") || RegExMatch(userCmd, "i)^t+")) && WinExist("ahk_class Chrome_WidgetWin_1")
 	{
-        WinGet, windows, List, , , Program Manager
-        Loop %windows%
+        ; "p" = Cursor and VS Code both — same AppStack letter; comma-back must restore last focused, not whichever
+        ; Chrome_WidgetWin_1 appears last in the window enumeration loop (old bug).
+        if RegExMatch(userCmd, "i)^p+")
         {
-            id := windows%A_Index%
-            WinGetClass, class, ahk_id %id%
-            WinGetTitle, winTitle, ahk_id %id%
-
-            If RegExMatch(class, "i)^Chrome_WidgetWin_1")
+            ; p should prefer Cursor first. VS Code is only fallback if no Cursor window exists.
+            useLastCursor := (lastCursorHwnd != "" && WinExist("ahk_id " . lastCursorHwnd))
+            if useLastCursor
             {
-                ; need to look at the title of the program to determine which one it is
-                if RegExMatch(winTitle, "i)- Azure Data Studio") && RegExMatch(userCmd, "i)^s+")
-                    WinActivate .*Azure Data Studio
-                else if RegExMatch(winTitle, "i)- Google Chrome") && RegExMatch(userCmd, "i)^a+")
-                    WinActivate .* - Google Chrome
-                else if RegExMatch(winTitle, "i)Slack") && RegExMatch(userCmd, "i)^r+")
-                    WinActivate Slack.*
-                else if RegExMatch(winTitle, "i)Cursor") && RegExMatch(userCmd, "i)^p+")
-                    WinActivate Cursor.*
-                else if RegExMatch(winTitle, "i)Visual Studio Code") && RegExMatch(userCmd, "i)^p+")
-                    WinActivate .*Visual Studio Code
-                else if RegExMatch(winTitle, "i)Microsoft Teams") && RegExMatch(userCmd, "i)^t+")
-                    WinActivate .*Microsoft Teams
+                WinGetClass, _pcCls, ahk_id %lastCursorHwnd%
+                WinGetTitle, _pcTit, ahk_id %lastCursorHwnd%
+                useLastCursor := RegExMatch(_pcCls, "i)^Chrome_WidgetWin_1") && CursorTitleIsApp(_pcTit)
+            }
+            if useLastCursor
+            {
+                WinActivate ahk_id %lastCursorHwnd%
+                lastElectronEditorHwnd := lastCursorHwnd
+            }
+            else
+            {
+                targetId =
+                WinGet, windows, List, , , Program Manager
+                Loop %windows%
+                {
+                    id := windows%A_Index%
+                    WinGetClass, class, ahk_id %id%
+                    WinGetTitle, winTitle, ahk_id %id%
+                    If !RegExMatch(class, "i)^Chrome_WidgetWin_1")
+                        continue
+                    if CursorTitleIsApp(winTitle)
+                    {
+                        targetId := id
+                        break
+                    }
+                }
+                if (targetId = "")
+                {
+                    useLastEditor := (lastElectronEditorHwnd != "" && WinExist("ahk_id " . lastElectronEditorHwnd))
+                    if useLastEditor
+                    {
+                        WinGetClass, _peCls, ahk_id %lastElectronEditorHwnd%
+                        WinGetTitle, _peTit, ahk_id %lastElectronEditorHwnd%
+                        useLastEditor := RegExMatch(_peCls, "i)^Chrome_WidgetWin_1") && ElectronEditorTitle(_peTit)
+                    }
+                    if useLastEditor
+                        targetId := lastElectronEditorHwnd
+                }
+                if (targetId = "")
+                {
+                    Loop %windows%
+                    {
+                        id := windows%A_Index%
+                        WinGetClass, class, ahk_id %id%
+                        WinGetTitle, winTitle, ahk_id %id%
+                        If !RegExMatch(class, "i)^Chrome_WidgetWin_1")
+                            continue
+                        if RegExMatch(winTitle, "i)Visual Studio Code")
+                        {
+                            targetId := id
+                            break
+                        }
+                    }
+                }
+                if (targetId != "")
+                {
+                    WinActivate ahk_id %targetId%
+                    WinGetTitle, _pet2, ahk_id %targetId%
+                    lastElectronEditorHwnd := targetId
+                    if CursorTitleIsApp(_pet2)
+                        lastCursorHwnd := targetId
+                }
+            }
+        }
+        else
+        {
+            WinGet, windows, List, , , Program Manager
+            Loop %windows%
+            {
+                id := windows%A_Index%
+                WinGetClass, class, ahk_id %id%
+                WinGetTitle, winTitle, ahk_id %id%
+
+                If RegExMatch(class, "i)^Chrome_WidgetWin_1")
+                {
+                    if RegExMatch(winTitle, "i)- Visual Studio Code") && RegExMatch(userCmd, "i)^s+")
+                    {
+                        WinActivate .*Visual Studio Code
+                        Sleep, 100
+                        Send ^!d
+                        break
+                    }
+                    else if RegExMatch(winTitle, "i)- Google Chrome") && RegExMatch(userCmd, "i)^a+")
+                    {
+                        WinActivate .* - Google Chrome
+                        break
+                    }
+                    else if RegExMatch(winTitle, "i)Slack") && RegExMatch(userCmd, "i)^r+")
+                    {
+                        WinActivate Slack.*
+                        break
+                    }
+                    else if RegExMatch(winTitle, "i)Microsoft Teams") && RegExMatch(userCmd, "i)^t+")
+                    {
+                        WinActivate .*Microsoft Teams
+                        break
+                    }
+                }
             }
         }
 	}
@@ -1060,7 +1173,27 @@ RunControlFocus(userCmd, userCmd2 = "", forceTitle = "")
 
 	Else If RegExMatch(userCmd, "i)^v+")
 	{
-        RunControlFocus_Dynamic(userCmd2, "VS", forceTitle)
+        ; Same idea as h+ / GVim: no index → restore last focused VS, not always dynamic stack slot 1.
+        if (userCmd2 != "")
+            RunControlFocus_Dynamic(userCmd2, "VS", forceTitle)
+        else if (forceTitle != "")
+            RunControlFocus_Dynamic("1", "VS", forceTitle)
+        else
+        {
+            useLast := (lastVsHwnd != "" && WinExist("ahk_id " . lastVsHwnd))
+            if useLast
+            {
+                WinGetTitle, _vsRestoreTit, ahk_id %lastVsHwnd%
+                useLast := RegExMatch(_vsRestoreTit, "i) - Microsoft Visual Studio")
+            }
+            if useLast
+            {
+                WinActivate ahk_id %lastVsHwnd%
+                GetDynamicWindows("VS")
+            }
+            else
+                RunControlFocus_Dynamic("1", "VS", forceTitle)
+        }
 	}
 }
 
@@ -1100,6 +1233,16 @@ RunControlFocus_Dynamic(userCmd2, type, forceTitle = "")
 
     WinActivate ahk_id %id%
 
+    if (type == "GVIM")
+        lastGvimHwnd := id
+    if (type == "CURSOR")
+    {
+        lastCursorHwnd := id
+        lastElectronEditorHwnd := id
+    }
+    if (type == "VS")
+        lastVsHwnd := id
+
     GetDynamicWindows(type)
 }
 
@@ -1122,9 +1265,219 @@ GetDynamicWindows(type)
             Stack.Push(id)
         if (type == "CMD" && (RegExMatch(class, "i)ConsoleWindowClass") || RegExMatch(class, "i)CASCADIA_HOSTING_WINDOW_CLASS")))
             Stack.Push(id)
+        if (type == "GVIM" && RegExMatch(class, "i)^Vim$"))
+            Stack.Push(id)
+        if (type == "CURSOR" && RegExMatch(class, "i)^Chrome_WidgetWin_1") && CursorTitleIsApp(title))
+            Stack.Push(id)
 	}
 
     dynamicWindowsStack[type] := Stack
+}
+
+; Cursor IDE uses Chrome_WidgetWin_1. Exclude Chrome browser and VS Code (avoid matching "cursor" in paths).
+CursorTitleIsApp(title)
+{
+    if RegExMatch(title, "i)Visual Studio Code")
+        return false
+    if RegExMatch(title, "i)- Google Chrome")
+        return false
+    return RegExMatch(title, "i) - Cursor$") || RegExMatch(title, "i)^Cursor")
+}
+
+; Comma stack "p" — Cursor or VS Code (both HwndWrapper Chrome shell).
+ElectronEditorTitle(title)
+{
+    if CursorTitleIsApp(title)
+        return true
+    return RegExMatch(title, "i)Visual Studio Code")
+}
+
+; Cycle or pick a GVim window. AdjustAppStack only when leaving a non-Vim app — if we push "h" while
+; already in GVim, comma-back reads AppStack[h] and breaks (same reason VS uses special cases for v).
+GvimCycle(next)
+{
+    global
+    GetDynamicWindows("GVIM")
+    Stack := dynamicWindowsStack["GVIM"]
+    cnt := Stack.MaxIndex()
+    if !cnt
+        return
+    WinGetClass, _gvimFromCls, A
+    if !RegExMatch(_gvimFromCls, "i)^Vim$")
+        AdjustAppStack()
+    WinGet, curId, ID, A
+    idx := 1
+    Loop %cnt%
+    {
+        if (Stack[A_Index] = curId)
+        {
+            idx := A_Index
+            break
+        }
+    }
+    if (next = 1)
+        newIdx := (idx >= cnt) ? 1 : idx + 1
+    else
+        newIdx := (idx <= 1) ? cnt : idx - 1
+    id := Stack[newIdx]
+    WinActivate ahk_id %id%
+    lastGvimHwnd := id
+}
+
+GvimActivateByIndex(n)
+{
+    global
+    if (n < 1)
+        return
+    GetDynamicWindows("GVIM")
+    Stack := dynamicWindowsStack["GVIM"]
+    cnt := Stack.MaxIndex()
+    if !cnt || (n > cnt)
+        return
+    WinGetClass, _gvimFromCls, A
+    if !RegExMatch(_gvimFromCls, "i)^Vim$")
+        AdjustAppStack()
+    id := Stack[n]
+    WinActivate ahk_id %id%
+    lastGvimHwnd := id
+}
+
+CursorWinActive()
+{
+    WinGetClass, _cuCls, A
+    WinGetTitle, _cuTit, A
+    return RegExMatch(_cuCls, "i)^Chrome_WidgetWin_1") && CursorTitleIsApp(_cuTit)
+}
+
+; Cycle or pick a Cursor window (same stack/comma rules as GvimCycle).
+CursorCycle(next)
+{
+    global
+    GetDynamicWindows("CURSOR")
+    Stack := dynamicWindowsStack["CURSOR"]
+    cnt := Stack.MaxIndex()
+    if !cnt
+        return
+    if !CursorWinActive()
+        AdjustAppStack()
+    WinGet, curId, ID, A
+    idx := 1
+    Loop %cnt%
+    {
+        if (Stack[A_Index] = curId)
+        {
+            idx := A_Index
+            break
+        }
+    }
+    if (next = 1)
+        newIdx := (idx >= cnt) ? 1 : idx + 1
+    else
+        newIdx := (idx <= 1) ? cnt : idx - 1
+    id := Stack[newIdx]
+    WinActivate ahk_id %id%
+    lastCursorHwnd := id
+    lastElectronEditorHwnd := id
+}
+
+CursorActivateByIndex(n)
+{
+    global
+    if (n < 1)
+        return
+    GetDynamicWindows("CURSOR")
+    Stack := dynamicWindowsStack["CURSOR"]
+    cnt := Stack.MaxIndex()
+    if !cnt || (n > cnt)
+        return
+    if !CursorWinActive()
+        AdjustAppStack()
+    id := Stack[n]
+    WinActivate ahk_id %id%
+    lastCursorHwnd := id
+    lastElectronEditorHwnd := id
+}
+
+VsWinActive()
+{
+    WinGetTitle, _vsTit, A
+    return RegExMatch(_vsTit, "i) - Microsoft Visual Studio")
+}
+
+; Cycle or pick a Visual Studio window (same stack/comma rules as GvimCycle).
+VsCycle(next)
+{
+    global
+    GetDynamicWindows("VS")
+    Stack := dynamicWindowsStack["VS"]
+    cnt := Stack.MaxIndex()
+    if !cnt
+        return
+    if !VsWinActive()
+        AdjustAppStack()
+    WinGet, curId, ID, A
+    idx := 1
+    Loop %cnt%
+    {
+        if (Stack[A_Index] = curId)
+        {
+            idx := A_Index
+            break
+        }
+    }
+    if (next = 1)
+        newIdx := (idx >= cnt) ? 1 : idx + 1
+    else
+        newIdx := (idx <= 1) ? cnt : idx - 1
+    id := Stack[newIdx]
+    WinActivate ahk_id %id%
+    lastVsHwnd := id
+}
+
+VsActivateByIndex(n)
+{
+    global
+    if (n < 1)
+        return
+    GetDynamicWindows("VS")
+    Stack := dynamicWindowsStack["VS"]
+    cnt := Stack.MaxIndex()
+    if !cnt || (n > cnt)
+        return
+    if !VsWinActive()
+        AdjustAppStack()
+    id := Stack[n]
+    WinActivate ahk_id %id%
+    lastVsHwnd := id
+}
+
+; Ctrl+Alt [ ] / 0–9: VS → Cursor → GVim (foreground decides).
+VsCursorOrGvimCycle(next)
+{
+    if VsWinActive()
+        VsCycle(next)
+    else if CursorWinActive()
+        CursorCycle(next)
+    else
+        GvimCycle(next)
+}
+
+VsCursorOrGvimActivateByIndex(n)
+{
+    if VsWinActive()
+        VsActivateByIndex(n)
+    else if CursorWinActive()
+        CursorActivateByIndex(n)
+    else
+        GvimActivateByIndex(n)
+}
+
+; Called from vim.ahk OpenFileInVim after activating a solution-matched GVim.
+GvimRememberHwnd(hwnd)
+{
+	global lastGvimHwnd
+	if (hwnd != "" && WinExist("ahk_id " . hwnd))
+		lastGvimHwnd := hwnd
 }
 
 RecordMacro()
@@ -1207,5 +1560,72 @@ RecordMacro()
 
 ; }}}
 
+; this command switches the languages around for my pc.  People keep needing to use it but I type Dvorak
+^!+l::
+If pointNCLick != 0
+{
+	Send ^{F1}
+	pointNCLick := 0
+	ChangeIcons()
+}
+
+toggleEditing := 1
+vi := 0
+
+InputBox, destLanguage, "Which keyboard are we changing to?", "Enter d or q: This is the destination language"
+
+If RegExMatch(destLanguage, "i)^[dq]$")
+{
+    Run, C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -File "%A_ScriptDir%\scripts\changeKeyboardLayout.ps1" -layout %destLanguage%
+}
+Return
+
+
 ; Dynamic includes - Auto-generated from ahk/apps directory using bat file
 #Include %A_ScriptDir%\ahk\dynamic_includes.ahk
+
+; xplorer2.ahk (and others) may leave #IfWinActive set — reset before global hotkeys.
+#If
+
+; GVim / Cursor / Visual Studio multi-instance: global Ctrl+Alt — foreground picks which stack.
+; Same comma-stack behavior (AdjustAppStack only when not already in that IDE).
+
+^![::
+VsCursorOrGvimCycle(0)
+Return
+
+^!]::
+VsCursorOrGvimCycle(1)
+Return
+
+^!0::
+VsCursorOrGvimActivateByIndex(10)
+Return
+^!1::
+VsCursorOrGvimActivateByIndex(1)
+Return
+^!2::
+VsCursorOrGvimActivateByIndex(2)
+Return
+^!3::
+VsCursorOrGvimActivateByIndex(3)
+Return
+^!4::
+VsCursorOrGvimActivateByIndex(4)
+Return
+^!5::
+VsCursorOrGvimActivateByIndex(5)
+Return
+^!6::
+VsCursorOrGvimActivateByIndex(6)
+Return
+^!7::
+VsCursorOrGvimActivateByIndex(7)
+Return
+^!8::
+VsCursorOrGvimActivateByIndex(8)
+Return
+^!9::
+VsCursorOrGvimActivateByIndex(9)
+Return
+

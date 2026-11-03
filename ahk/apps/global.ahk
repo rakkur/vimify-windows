@@ -26,26 +26,6 @@ else
     disableCommaTab := 1
 Return
 
-; this command switches the languages around for my pc.  People keep needing to use it but I type Dvorak
-^!+l::
-If pointNCLick != 0
-{
-	Send ^{F1}
-	pointNCLick := 0
-	ChangeIcons()
-}
-
-toggleEditing := 1
-vi := 0
-
-InputBox, destLanguage, "Which keyboard are we changing to?", "Enter d or q: This is the destination language"
-
-If RegExMatch(destLanguage, "i)^[dq]$")
-{
-    Run, C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -File "%A_ScriptDir%\scripts\changeKeyboardLayout.ps1" -layout %destLanguage%
-}
-Return
-
 ; functions to set/get clipboard values used by registers
 GrabClipboard(arrayPoint)
 {

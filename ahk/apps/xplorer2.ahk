@@ -99,22 +99,7 @@ RunExpCommand(count, key, modifier)
 		Send {Enter}
 	Else If RegExMatch(key, "i)^o$") && RegExMatch(modifier, "i)^plus$")
 	{
-		; get and reset clipboard
-		clipboardSave := clipboard
-		Sleep, 50
-		Send !c
-		Sleep, 200
-		clipboardSavePath := clipboard
-		Sleep, 50
-		clipboard := clipboardSave
-		Sleep, 50
-		AdjustAppStack()
-		Sleep, 250
-
-        If WinExist("ahk_class Vim")
-            Run, C:\Program Files\Vim\vim91\gvim.exe --remote "%clipboardSavePath%"
-        Else
-            Run, C:\Program Files\Vim\vim91\gvim.exe "%clipboardSavePath%"
+		OpenFileInVim("xplorer")
 	}
 	Else If RegExMatch(key, "i)^semicolon$")
 	{
@@ -213,8 +198,6 @@ RunExpCommand(count, key, modifier)
 		Send {Home}
 	Else If RegExMatch(key, "i)^g$") && RegExMatch(modifier, "i)^plus$")
 		Send {End}
-	Else If RegExMatch(key, "i)^F12$")
-		Send {F12}
 	Else If RegExMatch(key, "i)^fSlash$") && !RegExMatch(modifier, "i)^(ctrl|plus|alt)$")
 	{
 		Send +{Tab}
@@ -271,6 +254,14 @@ RunExpCommand(count, key, modifier)
 		Send {F9}
 	Else If RegExMatch(key, "i)^F10$")
 		Send {F10}
+	Else If RegExMatch(key, "i)^F12$")
+	{
+		Send !k
+		Sleep, 350
+		Send {Enter}
+		Sleep, 100
+		Send ^!{F7}
+	}
 	Else If RegExMatch(key, "i)^enter$")
 		Send {Enter}
 	Else If RegExMatch(key, "i)^s$") && RegExMatch(modifier, "i)^ctrl$")
@@ -365,3 +356,5 @@ Send {Enter}
 Sleep, 300
 MouseMove 564, 394
 Return
+
+#If
